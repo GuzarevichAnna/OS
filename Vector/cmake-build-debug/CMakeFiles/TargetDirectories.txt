@@ -1,0 +1,3 @@
+/home/anna/OS_3_sem/Vector/cmake-build-debug/CMakeFiles/Vector.dir
+/home/anna/OS_3_sem/Vector/cmake-build-debug/CMakeFiles/edit_cache.dir
+/home/anna/OS_3_sem/Vector/cmake-build-debug/CMakeFiles/rebuild_cache.dir
