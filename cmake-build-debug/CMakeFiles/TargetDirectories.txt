@@ -1,0 +1,3 @@
+A:/FAMCS/3_sem/OS 3 sem/Lab2_universal/cmake-build-debug/CMakeFiles/edit_cache.dir
+A:/FAMCS/3_sem/OS 3 sem/Lab2_universal/cmake-build-debug/CMakeFiles/Lab2_universal.dir
+A:/FAMCS/3_sem/OS 3 sem/Lab2_universal/cmake-build-debug/CMakeFiles/rebuild_cache.dir

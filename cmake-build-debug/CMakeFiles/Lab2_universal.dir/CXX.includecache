@@ -1,0 +1,20 @@
+#IncludeRegexLine: ^[ 	]*[#%][ 	]*(include|import)[ 	]*[<"]([^">]+)([">])
+
+#IncludeRegexScan: ^.*$
+
+#IncludeRegexComplain: ^$
+
+#IncludeRegexTransform: 
+
+A:/FAMCS/3_sem/OS 3 sem/Lab2_universal/main.cpp
+iostream
+-
+thread
+-
+ctime
+-
+vector
+-
+mutex
+-
+
