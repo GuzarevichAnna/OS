@@ -1,0 +1,24 @@
+#IncludeRegexLine: ^[ 	]*[#%][ 	]*(include|import)[ 	]*[<"]([^">]+)([">])
+
+#IncludeRegexScan: ^.*$
+
+#IncludeRegexComplain: ^$
+
+#IncludeRegexTransform: 
+
+A:/FAMCS/3_sem/OS 3 sem/Lab_channel/buffered_channel.h
+queue
+-
+mutex
+-
+condition_variable
+-
+
+A:/FAMCS/3_sem/OS 3 sem/Lab_channel/main.cpp
+iostream
+-
+thread
+-
+buffered_channel.h
+A:/FAMCS/3_sem/OS 3 sem/Lab_channel/buffered_channel.h
+
