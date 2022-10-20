@@ -36,7 +36,7 @@ public:
         if(is_closed_&& queue_.empty()) return {T(), false};
         std::unique_lock<std::mutex> lock(read_mut_);
         while(!can_read_) read_var_.wait(lock);
-        //if()
+        if(queue_.empty()) return {T(), false};
         T value = queue_.front();
         std::lock_guard<std::mutex> lockGuard(mut_);
         queue_.pop();
@@ -48,6 +48,8 @@ public:
 
     void Close() {
         is_closed_ = true;
+        read_var_.notify_one();
+        write_var_.notify_one();
     }
 
     std::queue<T> queue_;
