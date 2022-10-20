@@ -7,7 +7,7 @@
 
 std::mutex write_mut_;
 std::mutex read_mut_;
-//std::mutex mut_;
+std::mutex mut_;
 std::condition_variable write_var_;
 std::condition_variable read_var_;
 bool can_write_ = true;
@@ -25,7 +25,7 @@ public:
         if(is_closed_) throw std::runtime_error("The channel is closed.");
         std::unique_lock<std::mutex> lock(write_mut_);
         while(!can_write_) write_var_.wait(lock);
-        //std::lock_guard<std::mutex> lockGuard(mut_);
+        std::lock_guard<std::mutex> lockGuard(mut_);
         queue_.push(value);
         UpdateState();
         write_var_.notify_one();
@@ -36,8 +36,9 @@ public:
         if(is_closed_&& queue_.empty()) return {T(), false};
         std::unique_lock<std::mutex> lock(read_mut_);
         while(!can_read_) read_var_.wait(lock);
+        //if()
         T value = queue_.front();
-        //std::lock_guard<std::mutex> lockGuard(mut_);
+        std::lock_guard<std::mutex> lockGuard(mut_);
         queue_.pop();
         UpdateState();
         write_var_.notify_one();
