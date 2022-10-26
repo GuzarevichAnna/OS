@@ -3,4 +3,4 @@ project(Lab2_universal)
 
 set(CMAKE_CXX_STANDARD 20)
 
-add_executable(Lab2_universal main.cpp)
+add_executable(Lab2_universal main.cpp buffered_channel.h)

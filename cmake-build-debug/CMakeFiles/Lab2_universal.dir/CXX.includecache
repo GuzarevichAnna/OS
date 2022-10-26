@@ -6,7 +6,15 @@
 
 #IncludeRegexTransform: 
 
-A:/FAMCS/3_sem/OS 3 sem/Lab2_universal/main.cpp
+A:/FAMCS/3_sem/OS 3 sem/Lab2_thread/buffered_channel.h
+queue
+-
+mutex
+-
+condition_variable
+-
+
+A:/FAMCS/3_sem/OS 3 sem/Lab2_thread/main.cpp
 iostream
 -
 thread
@@ -17,4 +25,6 @@ vector
 -
 mutex
 -
+buffered_channel.h
+A:/FAMCS/3_sem/OS 3 sem/Lab2_thread/buffered_channel.h
 

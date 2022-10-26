@@ -3,32 +3,20 @@
 #include <ctime>
 #include <vector>
 #include <mutex>
+#include "buffered_channel.h"
+
+typedef std::tuple<int, int, int, int, int, int, int> tuple;
 
 std::mutex g_lock;
 
-void Multiply(int **A, int **B, int AblockWidth, int AblockHeight, int BblockWidth, int BblockHeight, int AstartRow,
-              int AstartColumn, int BstartRow, int BstartColumn, int **result) {
+const int N = 5;
+int **A = new int *[N];
+int **B = new int *[N];
+int **result = new int *[N];
 
+const int BUFFER_SIZE = N * N * N;
 
-    for (int i = 0; i < AblockHeight; ++i) {
-        for (int j = 0; j < BblockWidth; ++j) {
-            for (int k = 0; k < AblockWidth; ++k) {
-                g_lock.lock();
-                result[AstartRow + i][BstartColumn + j] +=
-                        A[AstartRow + i][AstartColumn + k] * B[BstartRow + k][BstartColumn + j];
-                g_lock.unlock();
-            }
-        }
-    }
-}
-
-
-int main() {
-
-    const int N = 70;
-    int **A = new int *[N];
-    int **B = new int *[N];
-    int **result = new int *[N];
+void GenerateAndDisplayMatrices() {
     for (int i = 0; i < N; ++i) {
         A[i] = new int[N];
         B[i] = new int[N];
@@ -70,7 +58,28 @@ int main() {
         }
         std::cout << '\n';
     }
+}
 
+
+void Multiply(int AblockWidth, int AblockHeight, int BblockWidth, int AstartRow,
+              int AstartColumn, int BstartRow, int BstartColumn) {
+
+    for (int i = 0; i < AblockHeight; ++i) {
+        for (int j = 0; j < BblockWidth; ++j) {
+            for (int k = 0; k < AblockWidth; ++k) {
+                g_lock.lock();
+                result[AstartRow + i][BstartColumn + j] +=
+                        A[AstartRow + i][AstartColumn + k] * B[BstartRow + k][BstartColumn + j];
+                g_lock.unlock();
+            }
+        }
+    }
+}
+
+
+int main() {
+
+    GenerateAndDisplayMatrices();
 
     for (int blockSize = 1; blockSize <= N; ++blockSize) {
         int numberOfBlocks = N / blockSize;
@@ -79,7 +88,6 @@ int main() {
         int AblockWidth;
         int AblockHeight;
         int BblockWidth;
-        int BblockHeight;
 
         if (N % blockSize != 0) {
             numberOfBlocks++;
@@ -88,48 +96,75 @@ int main() {
 
         std::vector<std::thread> ThreadVector;
 
-        auto start = std::chrono::steady_clock::now();
+        for (int number_of_threads = numberOfBlocks;
+             number_of_threads <= numberOfBlocks * numberOfBlocks * numberOfBlocks; number_of_threads *= 2) {
 
-        for (int i = 0; i < numberOfBlocks; ++i) {
-            for (int j = 0; j < numberOfBlocks; ++j) {
-                for (int k = 0; k < numberOfBlocks; ++k) {
+            BufferedChannel<tuple> bufferedChannel(BUFFER_SIZE);
 
-                    if (i == numberOfBlocks - 1) AblockHeight = lastBlockSize;
-                    else AblockHeight = blockSize;
+            auto start = std::chrono::steady_clock::now();
 
-                    if (j == numberOfBlocks - 1) BblockWidth = lastBlockSize;
-                    else BblockWidth = blockSize;
+            for (int i = 0; i < numberOfBlocks; ++i) {
+                for (int j = 0; j < numberOfBlocks; ++j) {
+                    for (int k = 0; k < numberOfBlocks; ++k) {
 
-                    if (k == numberOfBlocks - 1) AblockWidth = BblockHeight = lastBlockSize;
-                    else AblockWidth = BblockHeight = blockSize;
+                        if (i == numberOfBlocks - 1) AblockHeight = lastBlockSize;
+                        else AblockHeight = blockSize;
 
-                    std::thread thr = std::thread(Multiply, A, B, AblockWidth, AblockHeight, BblockWidth, BblockHeight,
-                                                  i * blockSize,
-                                                  k * blockSize,
-                                                  k * blockSize, j * blockSize, result);
-                    ThreadVector.push_back(move(thr));
+                        if (j == numberOfBlocks - 1) BblockWidth = lastBlockSize;
+                        else BblockWidth = blockSize;
+
+                        if (k == numberOfBlocks - 1) AblockWidth = lastBlockSize;
+                        else AblockWidth = blockSize;
+
+                        bufferedChannel.Send(std::make_tuple(AblockWidth, AblockHeight,
+                                                             BblockWidth,
+                                                             i * blockSize,
+                                                             k * blockSize,
+                                                             k * blockSize, j * blockSize));
+
+                        //std::cout << "sent " << i << ' ' << j << ' ' << k << '\n';
+                    }
                 }
             }
-        }
 
-        for (auto &thr: ThreadVector) {
-            thr.join();
-        }
-        auto end = std::chrono::steady_clock::now();
-        int time = std::chrono::duration_cast<std::chrono::microseconds>(end - start).count();
-        ThreadVector.clear();
+            bufferedChannel.Close();
 
-        std::cout << '\n' << "BlockSize = " << blockSize << ", duration = " << time << '\n';
-        for (int i = 0; i < N; ++i) {
-            for (int j = 0; j < N; ++j) {
-                std::cout << result[i][j] << ' ';
+            for (int i = 0; i < number_of_threads; ++i) {
+                ThreadVector.emplace_back([&bufferedChannel, i]() {
+                    while (true) {
+                        std::pair data = bufferedChannel.Recv();
+                        //std::cout << "received in thr number " << i << '\n';
+                        if (data.second) {
+                            Multiply(std::get<0>(data.first),
+                                     std::get<1>(data.first), std::get<2>(data.first), std::get<3>(data.first),
+                                     std::get<4>(data.first), std::get<5>(data.first), std::get<6>(data.first));
+                        } else break;
+                    }
+                });
             }
-            std::cout << '\n';
-        }
 
-        for (int i = 0; i < N; ++i) {
-            for (int j = 0; j < N; ++j) {
-                result[i][j] = 0;
+
+            for (auto &thr: ThreadVector) {
+                thr.join();
+            }
+
+            auto end = std::chrono::steady_clock::now();
+            int time = std::chrono::duration_cast<std::chrono::microseconds>(end - start).count();
+            ThreadVector.clear();
+
+            std::cout << '\n' << "BlockSize = " << blockSize << ", NumberOfThreads = " << number_of_threads
+                      << ", duration = " << time << '\n';
+            for (int i = 0; i < N; ++i) {
+                for (int j = 0; j < N; ++j) {
+                    std::cout << result[i][j] << ' ';
+                }
+                std::cout << '\n';
+            }
+
+            for (int i = 0; i < N; ++i) {
+                for (int j = 0; j < N; ++j) {
+                    result[i][j] = 0;
+                }
             }
         }
     }
