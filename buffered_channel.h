@@ -22,7 +22,6 @@ public:
     }
 
     void Send(T value) {
-        //if(is_closed_) throw std::runtime_error("The channel is closed.");
         std::unique_lock<std::mutex> lock(write_mut_);
         while(!can_write_) {
             if(is_closed_){
@@ -62,15 +61,8 @@ public:
         write_var_.notify_one();
     }
 
-    void Open(){
-        is_closed_ = false;
-        UpdateState();
-    }
-
-    std::queue<T> queue_;
-
 private:
-
+    std::queue<T> queue_;
     const int size_;
 
     void UpdateState(){
