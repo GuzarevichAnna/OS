@@ -1,13 +1,14 @@
 #include <iostream>
-#include <windows.h>
+#include <pthread.h>
 #include <ctime>
 #include <vector>
 #include <tuple>
 #include <chrono>
+#include <mutex>
 
 typedef std::tuple<int, int, int, int, int, int, int> tuple;
 
-HANDLE ghMutex;
+std::mutex g_lock;
 const int N = 5;
 int **A = new int *[N];
 int **B = new int *[N];
@@ -66,13 +67,11 @@ void Multiply(void *parametersVoidPointer) {
     for (int i = 0; i < std::get<1>(parametersTuple); ++i) {
         for (int j = 0; j < std::get<2>(parametersTuple); ++j) {
             for (int k = 0; k < std::get<0>(parametersTuple); ++k) {
-                WaitForSingleObject(
-                        ghMutex,
-                        INFINITE);
+                g_lock.lock();
                     result[std::get<3>(parametersTuple) + i][std::get<6>(parametersTuple) + j] +=
                             A[std::get<3>(parametersTuple) + i][std::get<4>(parametersTuple) + k] *
                             B[std::get<5>(parametersTuple) + k][std::get<6>(parametersTuple) + j];
-                    ReleaseMutex(ghMutex);
+                g_lock.unlock();
             }
         }
     }
@@ -98,13 +97,9 @@ int main() {
 
         int numberOfThreads = numberOfBlocks*numberOfBlocks*numberOfBlocks;
 
-        HANDLE ThreadArray[numberOfThreads];
-        DWORD ThreadIds[numberOfThreads];
         int thrNumber = 0;
-        ghMutex = CreateMutex(
-                nullptr,
-                FALSE,
-                nullptr);
+        std::vector<pthread_t> ThreadVector;
+        pthread_t ThreadIds[numberOfThreads];
 
         auto start = std::chrono::steady_clock::now();
 
@@ -127,15 +122,23 @@ int main() {
                                                              k * blockSize,
                                                              k * blockSize, j * blockSize);
 
-
-                    ThreadArray[thrNumber] = CreateThread(nullptr, 0, reinterpret_cast<LPTHREAD_START_ROUTINE>(Multiply),
-                                                   parametersPointer, 0, (LPDWORD) &ThreadIds[thrNumber]);
+                    long thread = pthread_create(
+                            &ThreadIds[thrNumber],
+                            nullptr,
+                            reinterpret_cast<void *(*)(void *)>(Multiply),
+                            parametersPointer
+                    );
                     thrNumber++;
+                    ThreadVector.push_back(thread);
                 }
             }
         }
 
-        WaitForMultipleObjects(numberOfBlocks*numberOfBlocks*numberOfBlocks, ThreadArray, TRUE, INFINITE);
+        for (auto thr: ThreadIds) {
+            pthread_join(thr, nullptr);
+        }
+
+        ThreadVector.clear();
 
         auto end = std::chrono::steady_clock::now();
         int time = std::chrono::duration_cast<std::chrono::microseconds>(end - start).count();
@@ -153,12 +156,7 @@ int main() {
                 result[i][j] = 0;
             }
         }
-
-        for( int i=0; i < numberOfThreads; i++ )
-            CloseHandle(ThreadArray[i]);
     }
-
-    CloseHandle(ghMutex);
 
     return 0;
 }

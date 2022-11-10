@@ -4,20 +4,11 @@ set(CMAKE_DEPENDS_IN_PROJECT_ONLY OFF)
 
 # The set of languages for which implicit dependencies are needed:
 set(CMAKE_DEPENDS_LANGUAGES
-  "CXX"
-  )
-# The set of files for implicit dependencies of each language:
-set(CMAKE_DEPENDS_CHECK_CXX
-  "A:/FAMCS/3_sem/OS 3 sem/Lab2_windowsh/main.cpp" "A:/FAMCS/3_sem/OS 3 sem/Lab2_windowsh/cmake-build-debug/CMakeFiles/Lab2_universal.dir/main.cpp.obj"
-  )
-set(CMAKE_CXX_COMPILER_ID "GNU")
-
-# The include file search paths:
-set(CMAKE_CXX_TARGET_INCLUDE_PATH
   )
 
 # The set of dependency files which are needed:
 set(CMAKE_DEPENDS_DEPENDENCY_FILES
+  "/home/anna/OS_3_sem/Lab_2_pthread/main.cpp" "CMakeFiles/Lab2_universal.dir/main.cpp.o" "gcc" "CMakeFiles/Lab2_universal.dir/main.cpp.o.d"
   )
 
 # Targets to which this target links.
