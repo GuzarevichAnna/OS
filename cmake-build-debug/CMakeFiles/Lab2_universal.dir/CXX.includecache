@@ -6,15 +6,17 @@
 
 #IncludeRegexTransform: 
 
-A:/FAMCS/3_sem/OS 3 sem/Lab2_universal/main.cpp
+A:/FAMCS/3_sem/OS 3 sem/Lab2_windowsh/main.cpp
 iostream
 -
-thread
+windows.h
 -
 ctime
 -
 vector
 -
-mutex
+tuple
+-
+chrono
 -
 

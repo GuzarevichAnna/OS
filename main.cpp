@@ -1,34 +1,19 @@
 #include <iostream>
-#include <thread>
+#include <windows.h>
 #include <ctime>
 #include <vector>
-#include <mutex>
+#include <tuple>
+#include <chrono>
 
-std::mutex g_lock;
+typedef std::tuple<int, int, int, int, int, int, int> tuple;
 
-void Multiply(int **A, int **B, int AblockWidth, int AblockHeight, int BblockWidth, int BblockHeight, int AstartRow,
-              int AstartColumn, int BstartRow, int BstartColumn, int **result) {
+HANDLE ghMutex;
+const int N = 5;
+int **A = new int *[N];
+int **B = new int *[N];
+int **result = new int *[N];
 
-
-    for (int i = 0; i < AblockHeight; ++i) {
-        for (int j = 0; j < BblockWidth; ++j) {
-            for (int k = 0; k < AblockWidth; ++k) {
-                g_lock.lock();
-                result[AstartRow + i][BstartColumn + j] +=
-                        A[AstartRow + i][AstartColumn + k] * B[BstartRow + k][BstartColumn + j];
-                g_lock.unlock();
-            }
-        }
-    }
-}
-
-
-int main() {
-
-    const int N = 70;
-    int **A = new int *[N];
-    int **B = new int *[N];
-    int **result = new int *[N];
+void GenerateAndDisplayMatrices() {
     for (int i = 0; i < N; ++i) {
         A[i] = new int[N];
         B[i] = new int[N];
@@ -70,7 +55,33 @@ int main() {
         }
         std::cout << '\n';
     }
+}
 
+
+void Multiply(void *parametersVoidPointer) {
+
+    tuple *parametersTuplePointer = static_cast<tuple *>(parametersVoidPointer);
+    tuple parametersTuple = *parametersTuplePointer;
+
+    for (int i = 0; i < std::get<1>(parametersTuple); ++i) {
+        for (int j = 0; j < std::get<2>(parametersTuple); ++j) {
+            for (int k = 0; k < std::get<0>(parametersTuple); ++k) {
+                WaitForSingleObject(
+                        ghMutex,
+                        INFINITE);
+                    result[std::get<3>(parametersTuple) + i][std::get<6>(parametersTuple) + j] +=
+                            A[std::get<3>(parametersTuple) + i][std::get<4>(parametersTuple) + k] *
+                            B[std::get<5>(parametersTuple) + k][std::get<6>(parametersTuple) + j];
+                    ReleaseMutex(ghMutex);
+            }
+        }
+    }
+}
+
+
+int main() {
+
+    GenerateAndDisplayMatrices();
 
     for (int blockSize = 1; blockSize <= N; ++blockSize) {
         int numberOfBlocks = N / blockSize;
@@ -79,14 +90,21 @@ int main() {
         int AblockWidth;
         int AblockHeight;
         int BblockWidth;
-        int BblockHeight;
 
         if (N % blockSize != 0) {
             numberOfBlocks++;
             lastBlockSize = N % blockSize;
         }
 
-        std::vector<std::thread> ThreadVector;
+        int numberOfThreads = numberOfBlocks*numberOfBlocks*numberOfBlocks;
+
+        HANDLE ThreadArray[numberOfThreads];
+        DWORD ThreadIds[numberOfThreads];
+        int thrNumber = 0;
+        ghMutex = CreateMutex(
+                nullptr,
+                FALSE,
+                nullptr);
 
         auto start = std::chrono::steady_clock::now();
 
@@ -100,24 +118,27 @@ int main() {
                     if (j == numberOfBlocks - 1) BblockWidth = lastBlockSize;
                     else BblockWidth = blockSize;
 
-                    if (k == numberOfBlocks - 1) AblockWidth = BblockHeight = lastBlockSize;
-                    else AblockWidth = BblockHeight = blockSize;
+                    if (k == numberOfBlocks - 1) AblockWidth = lastBlockSize;
+                    else AblockWidth = blockSize;
 
-                    std::thread thr = std::thread(Multiply, A, B, AblockWidth, AblockHeight, BblockWidth, BblockHeight,
-                                                  i * blockSize,
-                                                  k * blockSize,
-                                                  k * blockSize, j * blockSize, result);
-                    ThreadVector.push_back(move(thr));
+                    void *parametersPointer = new std::tuple<int, int, int, int, int, int, int>(AblockWidth, AblockHeight,
+                                                             BblockWidth,
+                                                             i * blockSize,
+                                                             k * blockSize,
+                                                             k * blockSize, j * blockSize);
+
+
+                    ThreadArray[thrNumber] = CreateThread(nullptr, 0, reinterpret_cast<LPTHREAD_START_ROUTINE>(Multiply),
+                                                   parametersPointer, 0, (LPDWORD) &ThreadIds[thrNumber]);
+                    thrNumber++;
                 }
             }
         }
 
-        for (auto &thr: ThreadVector) {
-            thr.join();
-        }
+        WaitForMultipleObjects(numberOfBlocks*numberOfBlocks*numberOfBlocks, ThreadArray, TRUE, INFINITE);
+
         auto end = std::chrono::steady_clock::now();
         int time = std::chrono::duration_cast<std::chrono::microseconds>(end - start).count();
-        ThreadVector.clear();
 
         std::cout << '\n' << "BlockSize = " << blockSize << ", duration = " << time << '\n';
         for (int i = 0; i < N; ++i) {
@@ -132,7 +153,12 @@ int main() {
                 result[i][j] = 0;
             }
         }
+
+        for( int i=0; i < numberOfThreads; i++ )
+            CloseHandle(ThreadArray[i]);
     }
+
+    CloseHandle(ghMutex);
 
     return 0;
 }

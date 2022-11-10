@@ -1,4 +1,4 @@
-# Install script for directory: A:/FAMCS/3_sem/OS 3 sem/Lab2_universal
+# Install script for directory: A:/FAMCS/3_sem/OS 3 sem/Lab2_windowsh
 
 # Set the install prefix
 if(NOT DEFINED CMAKE_INSTALL_PREFIX)
@@ -45,5 +45,5 @@ endif()
 
 string(REPLACE ";" "\n" CMAKE_INSTALL_MANIFEST_CONTENT
        "${CMAKE_INSTALL_MANIFEST_FILES}")
-file(WRITE "A:/FAMCS/3_sem/OS 3 sem/Lab2_universal/cmake-build-debug/${CMAKE_INSTALL_MANIFEST}"
+file(WRITE "A:/FAMCS/3_sem/OS 3 sem/Lab2_windowsh/cmake-build-debug/${CMAKE_INSTALL_MANIFEST}"
      "${CMAKE_INSTALL_MANIFEST_CONTENT}")
